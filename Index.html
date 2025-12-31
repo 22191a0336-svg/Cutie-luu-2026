@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A Quest for Cutie 🎀</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@400;600;900&display=swap" rel="stylesheet">
+  <style>
+    :root { --primary: #ff85a1; --secondary: #4a0e0e; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a0505; font-family: 'Poppins', sans-serif; color: white; }
+    
+    .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 100; transition: 0.5s; background: linear-gradient(135deg, #2d0a1a, #1a0505); }
+    .hidden { display: none !important; opacity: 0; }
+
+    /* QUIZ & CHEER STYLES */
+    .quiz-box { background: rgba(255, 255, 255, 0.1); padding: 30px; border-radius: 20px; width: 85%; max-width: 400px; border: 1px solid var(--primary); backdrop-filter: blur(10px); }
+    .ans-btn { background: white; color: #1a0505; border: none; padding: 12px; width: 100%; margin: 8px 0; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    #cheer-overlay { position: absolute; font-family: 'Dancing Script'; font-size: 35px; color: #ffd700; text-shadow: 0 0 20px #ff85a1; pointer-events: none; opacity: 0; transition: 0.3s; z-index: 1000; }
+    .show-cheer { opacity: 1 !important; transform: scale(1.2); }
+
+    /* GAME STYLES */
+    #game-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; }
+    #score-board { position: absolute; top: 20px; font-size: 22px; font-weight: 900; color: var(--primary); z-index: 101; text-shadow: 0 0 10px black; }
+
+    /* GIFT CARD STYLES */
+    .card { background: rgba(255, 255, 255, 0.07); padding: 20px; border-radius: 25px; width: 92%; max-width: 380px; text-align: center; backdrop-filter: blur(15px); border: 1px solid rgba(255, 133, 161, 0.3); box-shadow: 0 0 40px rgba(255, 133, 161, 0.2); max-height: 95vh; overflow-y: auto; z-index: 10; margin-top: 10px; }
+    .photo-frame { background: white; padding: 10px 10px 25px 10px; border-radius: 4px; box-shadow: 0 0 20px #ff85a1; margin: 15px auto; max-width: 150px; position: relative; transform: rotate(-2deg); }
+    .photo-frame img { width: 100%; height: auto; display: block; }
+    .photo-frame::before { content: '💐'; position: absolute; top: -15px; left: -15px; font-size: 24px; }
+    .photo-frame::after { content: '🎀'; position: absolute; top: -15px; right: -15px; font-size: 24px; }
+    .bot-l { position: absolute; bottom: -5px; left: -15px; font-size: 24px; }
+    .bot-r { position: absolute; bottom: -5px; right: -15px; font-size: 24px; }
+    
+    .glitter { font-weight: bold; color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+    .typing { font-size: 13.5px; line-height: 1.6; text-align: left; margin: 10px 0; color: #ffeef2; white-space: pre-wrap; }
+
+    .piano { display: flex; justify-content: center; background: #222; padding: 8px; border-radius: 12px; gap: 4px; margin-top: 10px; }
+    .key { width: 42px; height: 95px; background: white; border-radius: 0 0 6px 6px; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; color: #333; font-weight: 800; font-size: 16px; border: none; }
+    
+    .pop-text { position: fixed; font-weight: 700; font-size: 17px; pointer-events: none; animation: floatUpward 2.5s forwards; z-index: 3000; text-shadow: 1px 1px 10px rgba(0,0,0,0.5); }
+    @keyframes floatUpward { 0% { opacity: 0; transform: translateY(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translateY(-250px); } }
+
+    .btn-main { background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: 900; font-size: 18px; cursor: pointer; transition: 0.3s; }
+  </style>
+</head>
+<body>
+
+<audio id="bg-music" loop><source src="https://files.catbox.moe/5m3l0b.mp3" type="audio/mpeg"></audio>
+<audio id="piano-note"><source src="https://raw.githubusercontent.com/fuhton/piano-mp3/master/piano-mp3/C4.mp3"></audio>
+
+<div id="scr-start" class="screen">
+  <h1 style="font-family:'Dancing Script'; font-size: 38px; color: var(--primary);">Happy 2026, Cutie! 🎀</h1>
+  <p style="margin: 0 20px 30px;">I've hidden a surprise for you... but you have to win it first! 🤞🏻</p>
+  <button class="btn-main" onclick="startQuest()">BEGIN QUEST ✨</button>
+</div>
+
+<div id="scr-quiz" class="screen hidden">
+  <div id="cheer-overlay">Correct! 🥳</div>
+  <div class="quiz-box" id="quiz-ui">
+    <h2 id="question-text" style="font-size: 20px; margin-bottom: 20px;"></h2>
+    <div id="options-container"></div>
+  </div>
+</div>
+
+<div id="scr-game" class="screen hidden">
+  <div id="score-board">Catch 10 Hearts! 💖 0 / 10</div>
+  <canvas id="game-canvas"></canvas>
+</div>
+
+<div id="scr-gift" class="screen hidden">
+  <div class="card">
+    <h1 style="font-family:'Dancing Script'; color:var(--primary); margin: 0;">For My <span class="glitter">Cutie</span> 🎀</h1>
+    <div class="photo-frame">
+      <span class="bot-l">🎀</span><span class="bot-r">💐</span>
+      <img src="https://i.ibb.co/YBw5hzMV/IMG-20250921-072717.jpg" alt="Us">
+    </div>
+    <div id="text" class="typing"></div>
+    <div id="sign-off" style="display:none; text-align: center;">
+        <p style="color: var(--primary); font-size: 13px; font-weight: bold; margin: 5px 0;">I'm always yours 🫂💖☺️</p>
+        <div style="font-family:'Dancing Script'; font-size: 24px; margin-bottom: 10px;">💝 AY🫶🏻UU 💝 🫂😘🤞🏻👣</div>
+        <p style="font-size: 11px; text-transform: uppercase; color: #ffd700; font-weight: 800;">ONCE AGAIN HAPPY NEW YEAR TO MY PRETTY <span class="glitter">Cutie</span> 🎀🥳</p>
+    </div>
+    <div class="piano">
+      <div class="key" onclick="playKey('Come closer to my heart... 🫴🏻❣️🌸', '#FF1493', this)">C</div>
+      <div class="key" onclick="playKey('U & Me, meant to be... 🫴🏻❣️🌷', '#FFD700', this)">U</div>
+      <div class="key" onclick="playKey('Treasuring you forever... 🫴🏻❣️🌹', '#FF4500', this)">T</div>
+      <div class="key" onclick="playKey('I\'m yours and only yours... 🫴🏻❣️🌺', '#FF69B4', this)">I</div>
+      <div class="key" onclick="playKey('Endlessly in love with you... 🫴🏻❣️🌻', '#FF007F', this)">E</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const questions = [
+    { q: "Who is the owner of my heart? 🎀", a: ["You", "Someone else", "My cat"], correct: 0, cheer: "Correct! You're the best! 🥳" },
+    { q: "Which year became my favorite because you entered my life? 🗓️", a: ["2023", "2024", "2025"], correct: 2, cheer: "Aww, you remembered! ✨" },
+    { q: "What's the one thing I want for us in 2026? 👫", a: ["Infinite laughs", "To stay together forever", "Both of these!"], correct: 2, cheer: "Exactly! 🫂🤞🏻" }
+  ];
+  let currentQ = 0;
+
+  function startQuest() {
+    document.getElementById('bg-music').play();
+    document.getElementById('scr-start').classList.add('hidden');
+    document.getElementById('scr-quiz').classList.remove('hidden');
+    showQuestion();
+  }
+
+  function showQuestion() {
+    const q = questions[currentQ];
+    document.getElementById('question-text').innerText = q.q;
+    const container = document.getElementById('options-container');
+    container.innerHTML = '';
+    q.a.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'ans-btn';
+      btn.innerText = opt;
+      btn.onclick = () => {
+        if (i === q.correct) {
+          triggerCheer(q.cheer);
+        } else {
+          alert("Wrong answer! 🤭 Think harder, Cutie!");
+        }
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  function triggerCheer(msg) {
+    const cheer = document.getElementById('cheer-overlay');
+    const quizUi = document.getElementById('quiz-ui');
+    cheer.innerText = msg;
+    cheer.classList.add('show-cheer');
+    quizUi.style.opacity = "0.2";
+    
+    setTimeout(() => {
+      cheer.classList.remove('show-cheer');
+      quizUi.style.opacity = "1";
+      currentQ++;
+      if (currentQ < questions.length) showQuestion();
+      else startHeartGame();
+    }, 1200);
+  }
+
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  let score = 0, hearts = [], gameActive = false;
+
+  function startHeartGame() {
+    document.getElementById('scr-quiz').classList.add('hidden');
+    document.getElementById('scr-game').classList.remove('hidden');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gameActive = true;
+    animate();
+  }
+
+  function animate() {
+    if (!gameActive) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (Math.random() < 0.05) hearts.push({x: Math.random()*canvas.width, y: -50, s: 2.5+Math.random()*3, sz: 30+Math.random()*15});
+    hearts.forEach((h, idx) => {
+      h.y += h.s;
+      ctx.font = h.sz + "px serif";
+      ctx.fillText('💖', h.x, h.y);
+      if (h.y > canvas.height) hearts.splice(idx, 1);
+    });
+    requestAnimationFrame(animate);
+  }
+
+  canvas.addEventListener('mousedown', (e) => checkHit(e.clientX, e.clientY));
+  canvas.addEventListener('touchstart', (e) => checkHit(e.touches[0].clientX, e.touches[0].clientY));
+
+  function checkHit(x, y) {
+    hearts.forEach((h, idx) => {
+      if (Math.hypot(h.x + 10 - x, h.y - 10 - y) < 45) {
+        hearts.splice(idx, 1);
+        score++;
+        document.getElementById('score-board').innerText = `Catch 10 Hearts! 💖 ${score} / 10`;
+        if (score >= 10) showGift();
+      }
+    });
+  }
+
+  function showGift() {
+    gameActive = false;
+    document.getElementById('scr-game').classList.add('hidden');
+    document.getElementById('scr-gift').classList.remove('hidden');
+    typeWriter();
+  }
+
+  const rawMessage = `Hey Cutie ☺️👋,
+
+You know, 2025 has become my absolute favorite ☺️ year, and it’s all because of you Cutie 😘. From all our laughs 🤭 to the way we call each other "Cutie-Cutie😌" 🎀, every moment has been special 🥰✨.
+
+As 2026 begins 🎆,
+I don’t wish for perfect days ☀️,
+I just wish for days with you in them🫂💌 👫.
+
+If this year gives me one constant 💎,
+Let it be your smile 😁,
+Your presence ❣️🫂,
+And us… moving forward together🎀 🤝.
+
+I wish you all the good things 🍀 this world has to offer. Let's make this year even more beautiful 🌺 than the last🤞🏻🩵.`;
+
+  let i = 0;
+  function typeWriter() {
+    if (i < rawMessage.length) {
+      document.getElementById("text").innerHTML = rawMessage.substring(0, i + 1).replace(/Cutie/g, '<span class="glitter">Cutie</span>');
+      i++;
+      setTimeout(typeWriter, 55);
+    } else { document.getElementById('sign-off').style.display = 'block'; }
+  }
+
+  function playKey(t, c, el) {
+    const p = document.getElementById('piano-note'); p.currentTime = 0; p.play();
+    const pop = document.createElement("div"); pop.className = "pop-text"; pop.innerHTML = t; pop.style.color = c;
+    const r = el.getBoundingClientRect(); pop.style.left = (r.left - 40) + "px"; pop.style.top = r.top + "px";
+    document.body.appendChild(pop); setTimeout(() => pop.remove(), 2500);
+  }
+</script>
+</body>
+</html>
